@@ -1,0 +1,13 @@
+{
+  "features": [
+    "DNI",
+    "Temperatura",
+    "Viento",
+    "Humedad",
+    "hour_sin",
+    "hour_cos",
+    "doy_sin",
+    "doy_cos"
+  ],
+  "target": "COLCA_SOLAR"
+}

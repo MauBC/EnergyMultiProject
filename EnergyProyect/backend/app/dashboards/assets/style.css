@@ -1,0 +1,152 @@
+/* Estilo general del cuerpo del dashboard */
+body {
+    background-color: #111111;
+    color: #f2f2f2;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Estilos de los contenedores y títulos principales */
+.dashboard-container {
+    max-width: 1600px;
+    margin: auto;
+}
+
+.header {
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 2.5em;
+    color: white;
+}
+
+.section-title {
+    margin-top: 30px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 2em;
+    color: white;
+}
+
+/* Estilo para las tarjetas de KPI y ROI */
+.kpi-container, .roi-metrics {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 20px; /* Espacio entre tarjetas */
+    margin-bottom: 20px;
+}
+
+.kpi-card, .roi-metric {
+    background-color: #1E1E1E;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #333;
+    flex: 1; /* Para que todas las tarjetas ocupen el mismo espacio */
+}
+
+.kpi-card h3, .roi-metric h3 {
+    font-size: 2.5em;
+    margin: 0 0 5px 0;
+}
+
+.kpi-card p, .roi-metric p {
+    font-size: 1em;
+    color: #aaa;
+    margin: 0;
+}
+
+/* Layout principal de contenido */
+.content-section {
+    margin-top: 30px;
+}
+
+/* Contenedor de alertas en la columna derecha */
+.alert-container {
+    background-color: #1E1E1E;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    height: 100%;
+}
+
+.alert-container h4 {
+    margin-top: 0;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+}
+
+/* Estilo para cada tarjeta de alerta individual */
+.alert-card {
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border-left: 5px solid gray;
+    background-color: #2a2a2a;
+}
+
+.alert-card h5 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: 1.1em;
+}
+
+.alert-card p {
+    margin-bottom: 0;
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+/* Colores específicos para cada tipo de alerta */
+.alert-warning { border-left-color: #FFC300; }
+.alert-warning h5 { color: #FFC300; }
+
+.alert-info { border-left-color: #00BFFF; }
+.alert-info h5 { color: #00BFFF; }
+
+.alert-success { border-left-color: #2ECC71; }
+.alert-success h5 { color: #2ECC71; }
+
+/* Tabla de recomendaciones */
+.recommendations-table {
+    margin-top: 40px;
+    padding: 20px;
+    background-color: #1E1E1E;
+    border: 1px solid #333;
+    border-radius: 8px;
+}
+
+.recommendations-table h5 {
+    color: white;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.recommendations-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.recommendations-table th, .recommendations-table td {
+    border-bottom: 1px solid #444;
+    padding: 12px 15px;
+    text-align: left;
+}
+
+.recommendations-table th {
+    background-color: #333;
+    color: white;
+    font-size: 1em;
+}
+
+.recommendations-table td {
+    font-size: 0.95em;
+}
+
+/* Líneas divisorias */
+hr {
+    border: 0;
+    border-top: 1px solid #444;
+    margin: 40px 0;
+}

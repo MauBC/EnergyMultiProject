@@ -1,0 +1,82 @@
+# ==========================
+# General
+# ==========================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+*.pickle
+*.joblib
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+.env/
+
+# Archivos de configuración local
+*.env
+*.env.*
+
+# ==========================
+# React / Node.js
+# ==========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+
+# Build de producción
+build/
+dist/
+.next/
+out/
+
+# ==========================
+# Modelos y datasets
+# ==========================
+*.h5
+*.hdf5
+*.ckpt
+*.pb
+*.onnx
+*.pth
+*.pt
+*.tflite
+*.joblib
+*.weights
+*.tar.gz
+*.zip
+*.7z
+*.npz
+*.npy
+dataset/
+datasets/
+data/
+output/
+outputs/
+
+# ==========================
+# IDEs y herramientas
+# ==========================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ==========================
+# Carpeta a ignorar (repos embebidos)
+# ==========================
+EnergyProyect/landing-informativa/
