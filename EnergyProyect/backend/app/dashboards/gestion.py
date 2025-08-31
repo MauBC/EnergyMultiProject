@@ -7,24 +7,57 @@ import numpy as np
 from datetime import datetime, timedelta
 import plotly.io as pio
 import os
+import joblib
 
-# --- SIMULACIÓN DE DATOS ---
-end_date = datetime.now()
-start_date = end_date - timedelta(days=30)
-historical_dates = pd.date_range(start_date, end_date, freq='D')
-historical_data = {
-    'fecha': historical_dates,
-    'consumo_kwh_base': np.random.randint(100, 150, size=len(historical_dates)),
-    'consumo_kwh_real': np.random.randint(80, 120, size=len(historical_dates))
-}
-df_historical = pd.DataFrame(historical_data)
-df_historical['ahorro_kwh'] = df_historical['consumo_kwh_base'] - df_historical['consumo_kwh_real']
-df_historical['ahorro_soles'] = df_historical['ahorro_kwh'] * 0.75
 
+
+# Historial de alertas (máximo 10)
+alert_history = []
+MAX_ALERTS = 10
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Acumulador de energía del día
+consumo_hoy_kwh = 0.0
+ultimo_dia = None
+
+
+
+# --- CARGAR MODELO DE ANOMALÍAS ---
+MODEL_PATH = os.path.join(BASE_DIR, "..", "models", "Gestion", "modelo_anomalias.pkl")
+#MODEL_PATH = os.path.join(os.path.dirname(__file__), "modelo_anomalias.pkl")
+try:
+    anomaly_model = joblib.load(MODEL_PATH)
+    print("✅ Modelo de anomalías cargado en gestion.py")
+except Exception as e:
+    anomaly_model = None
+    print(f"⚠️ No se pudo cargar el modelo de anomalías: {e}")
+
+# --- CARGA DE DATOS REALES DESDE CSV ---
+CSV_PATH    = os.path.join(BASE_DIR, "..", "data", "data_modificada_15.csv")
+
+#CSV_PATH = os.path.join(os.path.dirname(__file__), "data_modificada_15.csv")
+df_realtime = pd.read_csv(CSV_PATH)
+df_realtime['total_act_power'] = pd.to_numeric(df_realtime['total_act_power'], errors='coerce')
+
+# Asegurar que exista columna fecha
+if 'timestamp' in df_realtime.columns:
+    df_realtime['timestamp'] = pd.to_datetime(df_realtime['timestamp'])
+else:
+    # Si no tiene columna fecha, se genera una serie temporal ficticia
+    df_realtime['timestamp'] = pd.date_range(
+        datetime.now() - timedelta(minutes=len(df_realtime)),
+        periods=len(df_realtime),
+        freq="T"
+    )
+
+# Índice global para recorrer el CSV
+current_index = 0
+
+# Series para la gráfica
 time_series = pd.to_datetime(pd.Series(dtype='datetime64[ns]'))
 power_series = pd.Series(dtype='float64')
 
-# --- INICIALIZACIÓN ---
+# --- DASH APP ---
 app = dash.Dash(
     __name__,
     assets_folder=os.path.join(os.path.dirname(__file__), "assets"),
@@ -34,7 +67,7 @@ server = app.server
 
 pio.templates.default = "plotly_dark"
 
-# --- DISEÑO ---
+# --- LAYOUT ---
 app.layout = html.Div(children=[
     html.H1(children='Dashboard de Gestión Energética - EnergIA', className='header'),
 
@@ -61,25 +94,76 @@ app.layout = html.Div(children=[
     dcc.Interval(id='interval-component', interval=5 * 1000, n_intervals=0)
 ], className='dashboard-container')
 
-# --- CALLBACKS ---
+# --- CALLBACK PARA KPIs Y GRAFICO ---
 @app.callback(
     [Output('kpi-container', 'children'), Output('real-time-power-graph', 'figure')],
     [Input('interval-component', 'n_intervals')]
 )
 def update_real_time_metrics(n):
-    global time_series, power_series
-    new_time = datetime.now()
-    new_power = 500 + np.random.randint(-100, 100)
-    if np.random.rand() > 0.9:
-        new_power = 3000 + np.random.randint(-500, 500)
+    global current_index, df_realtime, time_series, power_series, anomaly_model
 
-    time_series = pd.concat([time_series, pd.Series([new_time])], ignore_index=True)
-    power_series = pd.concat([power_series, pd.Series([new_power])], ignore_index=True)
-    mask = time_series > (new_time - timedelta(minutes=10))
-    time_series, power_series = time_series[mask], power_series[mask]
+    # --- Seleccionar fila actual ---
+    if current_index >= len(df_realtime):
+        current_index = 0  # reinicia cuando acaba el archivo
 
+    row = df_realtime.iloc[current_index]
+    current_index += 1
+
+    new_time = row['timestamp']
+    new_power = row['total_act_power']
+
+    global consumo_hoy_kwh, ultimo_dia
+
+    new_power = float(new_power)  # asegurar numérico
     potencia_actual_kw = new_power / 1000
-    consumo_hoy_kwh = df_historical['consumo_kwh_real'].iloc[-1]
+
+    # detectar si es un nuevo día (resetear acumulador)
+    if ultimo_dia is None or new_time.date() != ultimo_dia:
+        consumo_hoy_kwh = 0.0
+        ultimo_dia = new_time.date()
+
+    # sumar energía consumida (aprox: potencia [kW] * intervalo [h])
+    # como tu intervalo es 5s, la energía añadida es (5/3600) h
+    consumo_hoy_kwh += potencia_actual_kw * (5 / 3600)
+
+    costo_estimado_dia = consumo_hoy_kwh * 0.75
+    factor_potencia = 0.92 + np.random.rand() * 0.07
+
+    # --- Predicción de anomalía ---
+    anomaly_flag = 0
+    if anomaly_model is not None:
+        try:
+            hora = new_time.hour
+            dia = new_time.weekday()
+            features = pd.DataFrame([{
+                "total_act_power": new_power,
+                "hora_del_dia": hora,
+                "dia_de_la_semana": dia,
+                "hora_sin": np.sin(2 * np.pi * hora / 24),
+                "hora_cos": np.cos(2 * np.pi * hora / 24),
+                "dia_sin": np.sin(2 * np.pi * dia / 7),
+                "dia_cos": np.cos(2 * np.pi * dia / 7),
+            }])
+            anomaly_flag = anomaly_model.predict(features)[0]
+            if anomaly_flag == 1:
+                alert_msg = {
+                    "title": "🚨 Anomalía detectada en consumo",
+                    "text": f"Potencia inesperada: {new_power:.2f} W a las {new_time.strftime('%Y-%m-%d %H:%M:%S')}",
+                    "type": "alert-danger"
+                }
+                alert_history.append(alert_msg)
+
+                # Mantener máximo 10 alertas
+                if len(alert_history) > MAX_ALERTS:
+                    alert_history.pop(0)
+
+        except Exception as e:
+            print(f"Error al predecir anomalía: {e}")
+    
+    # --- KPIs básicos ---
+    potencia_actual_kw = new_power / 1000
+    
+    consumo_hoy_kwh += row.get('total_act_power')  # fallback
     costo_estimado_dia = consumo_hoy_kwh * 0.75
     factor_potencia = 0.92 + np.random.rand() * 0.07
 
@@ -90,18 +174,38 @@ def update_real_time_metrics(n):
         html.Div([html.H3(f"{factor_potencia:.2f} PF"), html.P("Factor Potencia")], className='three columns kpi-card'),
     ], className='row')
 
-    real_time_fig = go.Figure(go.Scatter(x=time_series, y=power_series, mode='lines', name='Potencia', line=dict(color='cyan')))
-    real_time_fig.update_layout(title_text='Potencia Activa (Últimos 10 Minutos)', margin=dict(t=50, b=50, l=30, r=30))
+    # --- Gráfico tiempo real ---
+    real_time_fig = go.Figure(go.Scatter(
+        x=time_series, y=power_series, mode='lines', name='Potencia', line=dict(color='cyan')
+    ))
+
+    # Si hay anomalía, agregamos un punto rojo
+    if anomaly_flag == 1:
+        real_time_fig.add_trace(go.Scatter(
+            x=[new_time], y=[new_power], mode='markers',
+            marker=dict(color='red', size=12, symbol='x'),
+            name='Anomalía'
+        ))
+
+    real_time_fig.update_layout(title_text='Potencia Activa (Últimos 10 Minutos)',
+                                margin=dict(t=50, b=50, l=30, r=30))
 
     return kpi_layout, real_time_fig
 
+# --- CALLBACK PARA ROI Y ALERTAS ---
 @app.callback(
-    [Output('roi-metrics-container', 'children'), Output('roi-bar-chart', 'figure'),
-     Output('recommendations-table-container', 'children'), Output('alerts-container', 'children')],
+    [Output('roi-metrics-container', 'children'),
+     Output('roi-bar-chart', 'figure'),
+     Output('recommendations-table-container', 'children'),
+     Output('alerts-container', 'children')],
     [Input('interval-component', 'n_intervals')]
 )
 def update_roi_and_alerts(n):
-    ahorro_mes_actual = df_historical['ahorro_soles'].sum()
+    # Métricas ROI usando todo el CSV
+    if 'ahorro_soles' not in df_realtime.columns:
+        df_realtime['ahorro_soles'] = 0.0
+
+    ahorro_mes_actual = df_realtime['ahorro_soles'].sum()
     costo_servicio = 150.00
     ahorro_neto = ahorro_mes_actual - costo_servicio
     roi_porcentaje = (ahorro_neto / costo_servicio) * 100 if costo_servicio > 0 else 0
@@ -113,13 +217,16 @@ def update_roi_and_alerts(n):
         html.Div([html.H3(f"{roi_porcentaje:.0f}%"), html.P("ROI Mensual")], className='three columns roi-metric'),
     ]
 
-    df_chart = df_historical.tail(7)
+    # Grafico ROI últimos 7 días
+    df_chart = df_realtime.tail(7)
     roi_fig = go.Figure()
-    roi_fig.add_trace(go.Bar(x=df_chart['fecha'], y=df_chart['consumo_kwh_base'], name='Consumo Base (Estimado)'))
-    roi_fig.add_trace(go.Bar(x=df_chart['fecha'], y=df_chart['consumo_kwh_real'], name='Consumo Real'))
+    if 'consumo_kwh_base' in df_realtime.columns and 'consumo_kwh_real' in df_realtime.columns:
+        roi_fig.add_trace(go.Bar(x=df_chart['timestamp'], y=df_chart['consumo_kwh_base'], name='Consumo Base (Estimado)'))
+        roi_fig.add_trace(go.Bar(x=df_chart['timestamp'], y=df_chart['consumo_kwh_real'], name='Consumo Real'))
     roi_fig.update_layout(title_text='Consumo Estimado vs. Real (Últimos 7 Días)', barmode='group',
                           margin=dict(t=50, b=50, l=30, r=30))
 
+    # Tabla recomendaciones fija (puedes ligarla al CSV si quieres)
     recommendations_table = html.Div([
         html.H5("Impacto de Recomendaciones"),
         html.Table([
@@ -132,20 +239,16 @@ def update_roi_and_alerts(n):
         ])
     ], className='recommendations-table')
 
+    # Alertas ejemplo
     alerts_layout = html.Div([
         html.H4("Centro de Alertas"),
-        html.Div([
-            html.H5("⚠️ Bajo Factor de Potencia"),
-            html.P("Se detectó un PF de 0.88 ayer a las 4 PM.")
-        ], className='alert-card alert-warning'),
-        html.Div([
-            html.H5("📈 Aumento de Consumo (Amasadora)"),
-            html.P("El consumo ha aumentado un 12%. Se recomienda revisión.")
-        ], className='alert-card alert-info'),
-        html.Div([
-            html.H5("💡 Oportunidad de Ahorro"),
-            html.P("Operar el horno principal después de las 10 PM podría ahorrar S/ 200 al mes.")
-        ], className='alert-card alert-success'),
+        *[
+            html.Div([
+                html.H5(alert["title"]),
+                html.P(alert["text"])
+            ], className=f'alert-card {alert["type"]}')
+            for alert in reversed(alert_history)  # Mostrar la más reciente arriba
+        ]
     ])
 
     return roi_metrics_layout, roi_fig, recommendations_table, alerts_layout
