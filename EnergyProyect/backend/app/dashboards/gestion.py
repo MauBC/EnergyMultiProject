@@ -101,69 +101,53 @@ app.layout = html.Div(children=[
 )
 def update_real_time_metrics(n):
     global current_index, df_realtime, time_series, power_series, anomaly_model
+    global consumo_hoy_kwh, ultimo_dia   # 👈 agrega esto
 
-    # --- Seleccionar fila actual ---
+
+
     if current_index >= len(df_realtime):
-        current_index = 0  # reinicia cuando acaba el archivo
+        current_index = 0
 
     row = df_realtime.iloc[current_index]
     current_index += 1
 
     new_time = row['timestamp']
-    new_power = row['total_act_power']
+    new_power = float(row['total_act_power'])  # asegurar numérico
 
-    global consumo_hoy_kwh, ultimo_dia
+    # --- actualizar series ---
+    time_series = pd.concat([time_series, pd.Series([new_time])], ignore_index=True)
+    power_series = pd.concat([power_series, pd.Series([new_power])], ignore_index=True)
 
-    new_power = float(new_power)  # asegurar numérico
+    # Potencia actual en kW
     potencia_actual_kw = new_power / 1000
+    # Energía activa total (kWh)
+    #df['activa_total'] = df['a_total_act_energy'] + df['b_total_act_energy'] + df['c_total_act_energy']
 
-    # detectar si es un nuevo día (resetear acumulador)
+    # Energía reactiva total (kvarh) = suma de lag + lead por fase
+    ''' FALTA LLENAR ESTO DEL CSV ORIGINAL
+    df['reactiva_total'] = (
+        df['a_lag_react_energy'] + df['a_lead_react_energy'] +
+        df['b_lag_react_energy'] + df['b_lead_react_energy'] +
+        df['c_lag_react_energy'] + df['c_lead_react_energy']
+    )
+
+    # Factor de potencia instantáneo (por cada registro)
+    df['fp'] = df['activa_total'] / ( (df['activa_total']**2 + df['reactiva_total']**2) ** 0.5 )
+    
+    # Promedio de FP en todo el dataset
+    fp_promedio = df['fp'].mean()
+    
+    print("Factor de potencia promedio:", fp_promedio)
+    '''
+    # Si es un nuevo día, resetear acumulador
     if ultimo_dia is None or new_time.date() != ultimo_dia:
         consumo_hoy_kwh = 0.0
         ultimo_dia = new_time.date()
 
-    # sumar energía consumida (aprox: potencia [kW] * intervalo [h])
-    # como tu intervalo es 5s, la energía añadida es (5/3600) h
+    # Acumular consumo (intervalo de 5s → 5/3600 horas)
     consumo_hoy_kwh += potencia_actual_kw * (5 / 3600)
 
-    costo_estimado_dia = consumo_hoy_kwh * 0.75
-    factor_potencia = 0.92 + np.random.rand() * 0.07
-
-    # --- Predicción de anomalía ---
-    anomaly_flag = 0
-    if anomaly_model is not None:
-        try:
-            hora = new_time.hour
-            dia = new_time.weekday()
-            features = pd.DataFrame([{
-                "total_act_power": new_power,
-                "hora_del_dia": hora,
-                "dia_de_la_semana": dia,
-                "hora_sin": np.sin(2 * np.pi * hora / 24),
-                "hora_cos": np.cos(2 * np.pi * hora / 24),
-                "dia_sin": np.sin(2 * np.pi * dia / 7),
-                "dia_cos": np.cos(2 * np.pi * dia / 7),
-            }])
-            anomaly_flag = anomaly_model.predict(features)[0]
-            if anomaly_flag == 1:
-                alert_msg = {
-                    "title": "🚨 Anomalía detectada en consumo",
-                    "text": f"Potencia inesperada: {new_power:.2f} W a las {new_time.strftime('%Y-%m-%d %H:%M:%S')}",
-                    "type": "alert-danger"
-                }
-                alert_history.append(alert_msg)
-
-                # Mantener máximo 10 alertas
-                if len(alert_history) > MAX_ALERTS:
-                    alert_history.pop(0)
-
-        except Exception as e:
-            print(f"Error al predecir anomalía: {e}")
-    
-    # --- KPIs básicos ---
-    potencia_actual_kw = new_power / 1000
-    
-    consumo_hoy_kwh += row.get('total_act_power')  # fallback
+    # Calcular costo y factor
     costo_estimado_dia = consumo_hoy_kwh * 0.75
     factor_potencia = 0.92 + np.random.rand() * 0.07
 
@@ -172,6 +156,9 @@ def update_real_time_metrics(n):
         html.Div([html.H3(f"S/ {costo_estimado_dia:.2f}"), html.P("Costo Estimado Hoy")], className='three columns kpi-card'),
         html.Div([html.H3(f"{potencia_actual_kw:.2f} kW"), html.P("Potencia Actual")], className='three columns kpi-card'),
         html.Div([html.H3(f"{factor_potencia:.2f} PF"), html.P("Factor Potencia")], className='three columns kpi-card'),
+        ## Falta llenar una fila
+        ## total_act_power/kgHarinaUsada
+
     ], className='row')
 
     # --- Gráfico tiempo real ---
@@ -179,16 +166,21 @@ def update_real_time_metrics(n):
         x=time_series, y=power_series, mode='lines', name='Potencia', line=dict(color='cyan')
     ))
 
-    # Si hay anomalía, agregamos un punto rojo
-    if anomaly_flag == 1:
-        real_time_fig.add_trace(go.Scatter(
-            x=[new_time], y=[new_power], mode='markers',
-            marker=dict(color='red', size=12, symbol='x'),
-            name='Anomalía'
-        ))
+    # Configurar ventana móvil de 10 minutos
+    if len(time_series) > 0:
+        xmax = time_series.iloc[-1]
+        xmin = xmax - timedelta(minutes=10)
+        real_time_fig.update_xaxes(range=[xmin, xmax])
 
-    real_time_fig.update_layout(title_text='Potencia Activa (Últimos 10 Minutos)',
-                                margin=dict(t=50, b=50, l=30, r=30))
+    # Si hay anomalía, agregar punto rojo
+    # (tu código original de anomaly_flag aquí)
+
+    real_time_fig.update_layout(
+        title_text='Potencia Activa (Últimos 10 Minutos)',
+        margin=dict(t=50, b=50, l=30, r=30),
+        xaxis_title="Tiempo",
+        yaxis_title="Potencia (W)"
+    )
 
     return kpi_layout, real_time_fig
 
