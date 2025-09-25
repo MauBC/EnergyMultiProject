@@ -9,19 +9,25 @@
     "@testing-library/user-event": "^13.5.0",
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",
+    "framer-motion": "^12.23.12",
+    "lucide-react": "^0.542.0",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.1",
     "react-scripts": "5.0.1",
+    "recharts": "^3.1.2",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
+  "start": "react-scripts start",
+  "build:css": "npx tailwindcss -i ./src/tailwind.css -o ./src/index.css --minify",
+  "build": "npm run build:css && react-scripts build",
+  "test": "react-scripts test",
+  "eject": "react-scripts eject"
+}
+
+,
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -39,5 +45,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "devDependencies": {
+  "tailwindcss": "^3.4.14",
+  "postcss": "^8.4.41",
+  "autoprefixer": "^10.4.20"
+}
+
 }

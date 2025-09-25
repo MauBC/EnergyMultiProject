@@ -1,38 +1,23 @@
-.App {
-  text-align: center;
-}
+/* Anclajes suaves y margen para que la barra no tape el contenido */
+html { scroll-behavior: smooth; }
+section[id] { scroll-margin-top: 88px; } /* ajusta 72–96 si tu navbar cambia de alto */
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
+/* Navbar sticky (no fixed) + altura controlada */
+.navbar.sticky-top { position: sticky !important; top: 0; z-index: 1030; }
+.navbar { min-height: 56px; }
+.navbar .container { min-height: 56px; }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
+/* Fondo del menú colapsado en móvil, transparente en desktop */
+.navbar-collapse { background-color: #212529; }
+@media (min-width: 992px) { .navbar-collapse { background-color: transparent; } }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
+/* Nunca dejes padding-top global (solo si antes probaste fixed-top) */
+body { padding-top: 0 !important; }
 
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+/* Evita que el menú abierto ocupe toda la pantalla en móvil */
+@media (max-width: 991.98px) {
+  .navbar-collapse.show {
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
   }
 }

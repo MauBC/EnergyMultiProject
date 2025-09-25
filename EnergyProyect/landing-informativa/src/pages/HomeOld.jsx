@@ -34,7 +34,7 @@ export default function Home() {
     {
       title: "Gestión Energética",
       desc: "Optimización con IA de consumos industriales.",
-      img: "./gestion.png",
+      img: "/gestion.png",
       beneficios: [
         "Reducción de costos operativos mediante la detección de consumos ocultos o ineficientes.",
         "Mantenimiento predictivo que disminuye fallos y paradas de equipos.",
@@ -47,7 +47,7 @@ export default function Home() {
     {
       title: "Gestión Energética de BESS",
       desc: "Modelos IA para gestionar BESS.",
-      img: "./bess.png",
+      img: "/bess.png",
       beneficios: [
         "Optimización de los ciclos de carga y descarga, prolongando la vida útil de las baterías.",
         "Reducción de costos gracias a la gestión inteligente de tarifas horarias.",
@@ -60,7 +60,7 @@ export default function Home() {
     {
       title: "Predicción Fotovoltaica",
       desc: "Cálculo de energía solar según clima y ubicación.",
-      img: "./fotovoltaica.png",
+      img: "/fotovoltaica.png",
       beneficios: [
         "Predicciones más precisas de generación solar, facilitando la planificación energética.",
         "Mejor dimensionamiento de sistemas solares y de respaldo.",
@@ -74,57 +74,13 @@ export default function Home() {
 
   const [openIdx, setOpenIdx] = useState(null);
 
-  // arriba del return:
-const [form, setForm] = useState({
-  nombre: "",
-  correo: "",
-  empresa: "",
-  mensaje: "",
-  hp: "" // honeypot hidden
-});
-const [sending, setSending] = useState(false);
-const [okMsg, setOkMsg] = useState("");
-const [errMsg, setErrMsg] = useState("");
-
-const API_URL = "https://tfc9kyrrtg.execute-api.us-east-1.amazonaws.com/contact";
-
-function onChange(e) {
-  setForm({ ...form, [e.target.name]: e.target.value });
-}
-
-async function onSubmit(e) {
-  e.preventDefault();
-  setOkMsg("");
-  setErrMsg("");
-  try {
-    setSending(true);
-    const r = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
-    });
-    const j = await r.json().catch(() => ({}));
-    if (r.ok && j.ok) {
-      setOkMsg("Mensaje enviado. Gracias!");
-      setForm({ nombre: "", correo: "", empresa: "", mensaje: "", hp: "" });
-    } else {
-      setErrMsg(j.error || "No se pudo enviar. Intenta nuevamente.");
-    }
-  } catch (err) {
-    setErrMsg("Error de red. Intenta nuevamente.");
-  } finally {
-    setSending(false);
-  }
-}
-
-
   return (
     <div className="font-sans">
       {/* HERO con imagen de fondo y CTA */}
       <section className="relative min-h-[80vh] md:min-h-screen pt-28 md:pt-36 px-6 flex flex-col items-center justify-center text-center text-white">
         {/* Fondo */}
         <img
-          src="./imagen_fondo.png"
+          src="/imagen_fondo.png"
           alt=""
           className="absolute inset-0 -z-20 w-full h-full object-cover"
         />
@@ -142,7 +98,7 @@ async function onSubmit(e) {
             lineHeight: 1.05,
           }}
         >
-          Optimizamos la energía con 
+          Optimizamos la energía con
           <br className="hidden md:block" />
           Inteligencia Artificial
         </motion.h2>
@@ -339,7 +295,7 @@ async function onSubmit(e) {
           <div className="space-y-3">
             <p className="flex items-center justify-center gap-2">
               <Linkedin />
-              <a className="underline" href="https://www.linkedin.com/company/energia-ia/about/?viewAsMember=true" target="_blank" rel="noreferrer noopener">
+              <a className="underline" href="#" target="_blank" rel="noreferrer noopener">
                 Síguenos en LinkedIn
               </a>
             </p>
@@ -351,64 +307,34 @@ async function onSubmit(e) {
             </p>
             <p className="flex items-center justify-center gap-2">
               <Mail />{" "}
-              <a href="mailto:consultas@energiape.com">consultas@energiape.com</a>
+              <a href="mailto:info@analyticsforindustry.com">info@analyticsforindustry.com</a>
             </p>
           </div>
           <form
-  className="bg-white shadow rounded-2xl p-6 space-y-4 w-full md:w-1/2"
-  onSubmit={onSubmit}
->
-  <input
-    className="w-full border rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-300"
-    placeholder="Nombre"
-    name="nombre"
-    value={form.nombre}
-    onChange={onChange}
-  />
-  <input
-    className="w-full border rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-300"
-    placeholder="Correo"
-    type="email"
-    name="correo"
-    value={form.correo}
-    onChange={onChange}
-    required
-  />
-  <input
-    className="w-full border rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-300"
-    placeholder="Empresa"
-    name="empresa"
-    value={form.empresa}
-    onChange={onChange}
-  />
-  <textarea
-    className="w-full border rounded-2xl px-4 py-2 h-28 resize-none focus:outline-none focus:ring-2 focus:ring-green-300"
-    placeholder="Mensaje"
-    name="mensaje"
-    value={form.mensaje}
-    onChange={onChange}
-    required
-  />
-  {/* honeypot oculto */}
-  <input
-    type="text"
-    name="hp"
-    value={form.hp}
-    onChange={onChange}
-    style={{ display: "none" }}
-    tabIndex={-1}
-    autoComplete="off"
-  />
-  <button
-    className="bg-green-600 text-white w-full rounded-2xl py-2 hover:bg-green-700 disabled:opacity-60"
-    disabled={sending}
-  >
-    {sending ? "Enviando..." : "Enviar"}
-  </button>
-  {okMsg && <p className="text-green-600">{okMsg}</p>}
-  {errMsg && <p className="text-red-600">{errMsg}</p>}
-</form>
-
+            className="bg-white shadow rounded-2xl p-6 space-y-4 w-full md:w-1/2"
+            onSubmit={(e) => e.preventDefault()}
+          >
+            <input
+              className="w-full border rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-300"
+              placeholder="Nombre"
+            />
+            <input
+              className="w-full border rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-300"
+              placeholder="Correo"
+              type="email"
+            />
+            <input
+              className="w-full border rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-300"
+              placeholder="Empresa"
+            />
+            <textarea
+              className="w-full border rounded-2xl px-4 py-2 h-28 resize-none focus:outline-none focus:ring-2 focus:ring-green-300"
+              placeholder="Mensaje"
+            />
+            <button className="bg-green-600 text-white w-full rounded-2xl py-2 hover:bg-green-700">
+              Enviar
+            </button>
+          </form>
         </div>
       </section>
 
