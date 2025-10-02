@@ -132,20 +132,18 @@ async function onSubmit(e) {
         <div className="absolute inset-0 -z-10 bg-black/65" />
 
         {/* Título (tamaño medio entre el original y el gigante) */}
-        <motion.h2
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9 }}
-          className="max-w-7xl mx-auto font-extrabold tracking-tight drop-shadow text-center"
-          style={{
-            fontSize: "clamp(3.25rem, 6.5vw + 0.5rem, 9rem)",
-            lineHeight: 1.05,
-          }}
-        >
-          Optimizamos la energía con 
-          <br className="hidden md:block" />
-          Inteligencia Artificial
-        </motion.h2>
+       <motion.h2
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9 }}
+        className="max-w-7xl mx-auto font-extrabold tracking-tight drop-shadow text-center 
+                  text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-tight"
+      >
+        Optimizamos la energía con
+        <br/>
+        Inteligencia Artificial
+      </motion.h2>
+
 
         <div className="mt-14 md:mt-16">
           <a
